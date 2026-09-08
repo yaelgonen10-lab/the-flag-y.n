@@ -123,16 +123,16 @@ def move_solider_left(body_loc,leg_loc):
 def move_solider_up(body_loc,leg_loc):
     """moves the player up in the matrix"""
     for location in body_loc:
-        location[0] += 1
+        location[0] -= 1
     for location in leg_loc:
-        location[0] += 1
+        location[0] -= 1
 
 def move_solider_down(body_loc,leg_loc):
     """moves the player down in the matrix"""
     for location in body_loc:
-        location[0] -= 1
+        location[0] += 1
     for location in leg_loc:
-        location[0] -= 1
+        location[0] += 1
 
 def print_matrix(body_lst):
     for row in body_lst:
