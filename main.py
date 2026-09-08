@@ -1,8 +1,9 @@
 import pygame
 import sys
-print('hello')
-
-
+import consts
+import game_field
+import screen
+import soldier
 
 
 def handle_user_events():
