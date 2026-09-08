@@ -3,7 +3,7 @@ import sys
 import consts
 import random
 
-FLOWER_SIZE = (60, 60) #Size of flowers (insted of the grass)
+FLOWER_SIZE = (55, 55) #Size of flowers (insted of the grass)
 GREEN = (34, 139, 34) #The color green
 NUM_FLOWERS = 20 #The required number of flowers
 MAX_ATTEMPTS = 100 #The number of times it will randomly select a location for the flowers
@@ -12,8 +12,7 @@ BUFFER_PIXELS = 15 #To ensure the flowers don't overlap and remain truly separat
 
 def init_game():
     pygame.init()
-    screen = pygame.display.set_mode(
-            (consts.WINDOW_WIDTH, consts.WINDOW_HEIGHT))
+    screen = pygame.display.set_mode((consts.WINDOW_WIDTH, consts.WINDOW_HEIGHT))
     pygame.display.set_caption("game")
 
     original_image = pygame.image.load("flower.png").convert_alpha()
