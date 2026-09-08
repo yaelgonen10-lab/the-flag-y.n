@@ -2,23 +2,26 @@ from itertools import count
 
 import consts
 
+import consts
+import game_field
 
-def create_solider_body():
-    body_lst = []
-    for i in range(consts.SOLDIER_BODY_ROWS * consts.SOLDIER_COLS):
-        body_lst.append([])
-        for j in range(consts.SOLDIER_COLS):
-            body_lst[i].append(i)
-            body_lst[i].append(j)
-    return body_lst
 
-# def start_lst_loc_body_solider():
-#     body_lst = []
-#     for i in range(consts.SOLDIER_BODY_ROWS):
-#         body_lst.append([])
-#         for j in range(consts.SOLDIER_COLS):
-#             body_lst[i].append("s")
-#     return body_lst
+def save_start_body_loc():
+    body_loc = []
+    for row in range(consts.SOLDIER_BODY_ROWS):
+        for col in range(consts.SOLDIER_COLS):
+            location = [row, col]
+            body_loc.append(location)
+    return body_loc
+
+
+def save_start_leg_loc():
+    leg_loc = []
+    for row in range(consts.SOLDIER_FEET_ROWS):
+        for col in range(consts.SOLDIER_COLS):
+            location = [consts.SOLDIER_BODY_ROWS + row, col]
+            leg_loc.append(location)
+    return leg_loc
 
 
 
@@ -28,14 +31,15 @@ def print_matrix(body_lst):
             print(elem, end=" ")
         print()
 
-def create_solider_feet():
-    feet_lst = []
-    for i in range(consts.SOLDIER_FEET_ROWS):
-        for j in range(consts.SOLDIER_COLS):
-            feet_lst.append("f")
-    return feet_lst
+def is_reach_the_flag(body_loc):
+    for location in body_loc:
+        row = location[0]
+        col = location[1]
+        if game_field.matrix_field[row][col] == "f":
+            return True
+    return False
 
-create_solider_body()
-create_solider_feet()
-print_matrix(create_solider_body())
-print_matrix(create_solider_feet())
+
+
+save_start_body_loc()
+save_start_leg_loc()
