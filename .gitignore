@@ -1,0 +1,11 @@
+# PyCharm
+.idea/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# פלייסהולדר זמני שנוצר לבדיקה - יוחלף בתמונת grass/soldier/flag אמיתית
+flower.png

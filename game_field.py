@@ -44,8 +44,7 @@ def is_possible_mine(location):
     elif matrix_field[row][col - 1] == "x":
         return False
     for i in range(consts.MINE_COLS + 1):
-            if matrix_field[row][col + i] == "x" or\
-                matrix_field[row][col + i] == "f":
+            if matrix_field[row][col + i] in "xfsl":
                 return False
     return True
 
@@ -78,5 +77,5 @@ def print_matrix():
 create_matrix_field()
 scatter_mines()
 scatter_flag()
-print_matrix()
+# print_matrix()
 
