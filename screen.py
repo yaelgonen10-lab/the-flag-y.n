@@ -3,12 +3,14 @@ import sys
 import consts
 import random
 
+
 FLOWER_SIZE = (55, 55)  # Size of flowers (instead of the grass)
 GREEN = (34, 139, 34)  # The color green
 NUM_FLOWERS = 20  # The required number of flowers
 MAX_ATTEMPTS = 100  # The number of times it will randomly select a location for the flowers
 BUFFER_PIXELS = 15  # To ensure the flowers don't overlap and remain truly separated, we will space them out by using pixels
 WHITE = (255, 255, 255)  # Font color of the text
+
 
 
 def init_game():
