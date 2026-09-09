@@ -1,6 +1,7 @@
 import pygame
 import sys
-print('hello')
+
+import soldier
 
 
 
@@ -9,30 +10,35 @@ def handle_user_events():
     for event in pygame.event.get():
 
         if event.type == pygame.QUIT:
-            pass
-            #pygame.quit()
-            #sys.exit()        #running = False
+            running = False
 
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_LEFT:
-                pass
-                #go_left()
+                if soldier.is_possible_left():
+                    soldier.remove_solider_location()
+                    soldier.move_solider_left()
+                    soldier.update_solider_location(body_loc,leg_loc)
+
 
             elif event.key == pygame.K_RIGHT:
-                pass
-                #go_right()
+                if soldier.is_possible_right():
+                    soldier.remove_solider_location()
+                    soldier.move_solider_right()
+                    soldier.update_solider_location(body_loc, leg_loc)
 
             elif event.key == pygame.K_UP:
-                pass
-                #go_up()
+                if soldier.is_possible_up():
+                    soldier.remove_solider_location()
+                    soldier.move_solider_up()
+                    soldier.update_solider_location(body_loc, leg_loc)
 
             elif event.key == pygame.K_DOWN:
-                pass
-                #go_down()
+                if soldier.is_possible_down():
+                    soldier.remove_solider_location()
+                    soldier.move_solider_down()
+                    soldier.update_solider_location(body_loc, leg_loc)
 
-            elif event.key == pygame.K_SPACE:
+
+            elif event.key == pygame.K_RETURN:
                 pass
                 #show_screen_with_bumbs()
-
-
-
