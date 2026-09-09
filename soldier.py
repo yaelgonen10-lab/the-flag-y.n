@@ -1,160 +1,84 @@
-from itertools import count
+"""
+soldier.py
+==========
+דמות השחקן.
+
+החייל מיוצג ע"י position - הפינה השמאלית-עליונה שלו על הלוח, [row, col].
+כל השאר מחושב ממנו:
+  * body_cells()  - 6 המשבצות העליונות (הגוף), נבדקות מול הדגל.
+  * feet_cells()  - 2 המשבצות התחתונות (הרגליים), נבדקות מול המוקשים.
+
+החייל אינו נשמר במטריצה של game_field - כך אין צורך "למחוק ולצייר מחדש"
+אותו בכל תזוזה, והלוגיקה נשארת נקייה.
+"""
+
 import consts
-import game_field
 
-"""start location saved"""
-def save_start_body_loc():
-    """saves the solider starting body position in the matrix.
-    ([ [0,0], [0,1]
-       [1,0], [1,1]
-       [2,0], [2,1] ])"""
-    body_loc = []
-    for row in range(consts.SOLDIER_BODY_ROWS):
-        for col in range(consts.SOLDIER_COLS):
-            location = [row, col]
-            body_loc.append(location)
-    return body_loc
+# תזוזה של משבצת אחת לכל כיוון, בתור (delta_row, delta_col).
+# שימו לב: ב-pygame הכיוון החיובי של ציר Y הוא כלפי מטה, לכן
+# "מעלה" זו הקטנת השורה ו"מטה" זו הגדלתה.
+DIRECTIONS = {
+    "up": (-1, 0),
+    "down": (1, 0),
+    "left": (0, -1),
+    "right": (0, 1),
+}
 
-
-def save_start_leg_loc():
-    """saves the solider starting leg position in the matrix.
-        ([ [3,0], [3,1] ])"""
-    leg_loc = []
-    for row in range(consts.SOLDIER_FEET_ROWS):
-        for col in range(consts.SOLDIER_COLS):
-            location = [consts.SOLDIER_BODY_ROWS + row, col]
-            leg_loc.append(location)
-    return leg_loc
+# הפינה השמאלית-עליונה של החייל על הלוח (row, col).
+position = [consts.SOLDIER_START_ROW, consts.SOLDIER_START_COL]
 
 
-"""update and remove solider locations"""
-def update_solider_location(body_loc,leg_loc):
-    """updates the soldier's location in the matrix
-    if body = s
-    if leg = l"""
-    for location in body_loc:
-        row = location[0]
-        col = location[1]
-        game_field.matrix_field[row][col] = "s"
-    for location in leg_loc:
-        row = location[0]
-        col = location[1]
-        game_field.matrix_field[row][col] = "l"
-
-def remove_solider_location(body_loc,leg_loc):
-    """removes the soldier's position from the matrix
-    (update to start value 0)"""
-    for location in body_loc:
-        row = location[0]
-        col = location[1]
-        game_field.matrix_field[row][col] = "0"
-    for location in leg_loc:
-        row = location[0]
-        col = location[1]
-        game_field.matrix_field[row][col] = "0"
+def create():
+    """מציב את החייל במיקום ההתחלה (הפינה השמאלית-עליונה של הלוח)."""
+    global position
+    position = [consts.SOLDIER_START_ROW, consts.SOLDIER_START_COL]
 
 
-
-"""cheks if win or loss"""
-def is_win_reach_the_flag(body_loc):
-    """checks whether the player won (the soldier's body reached the flag)"""
-    for location in body_loc:
-        row = location[0]
-        col = location[1]
-        if game_field.matrix_field[row][col] == "f":
-            return True
-    return False
-
-def is_loss_reach_mine(leg_loc):
-    """Checks whether the player lost (the soldier's feet reached the mine)"""
-    for location in leg_loc:
-        row = location[0]
-        col = location[1]
-        if game_field.matrix_field[row][col] == "x":
-            return True
-    return False
+def body_cells():
+    """רשימת (row, col) של 6 משבצות הגוף (השורות העליונות)."""
+    top, left = position
+    return [(top + row, left + col)
+            for row in range(consts.SOLDIER_BODY_ROWS)
+            for col in range(consts.SOLDIER_COLS)]
 
 
-"""chekes movements requests of solider"""
-def is_possible_left(body_loc):
-    """checks whether the player can be moved to the left"""
-    check_loc = body_loc[0]
-    if check_loc[1] == 0:
-        return False
-    return  True
-
-def is_possible_right(body_loc):
-    """checks whether the player can be moved to the right"""
-    check_loc = body_loc[1]
-    if check_loc[1] == consts.BOARD_COLS - 1:
-        return False
-    return  True
-
-def is_possible_up(body_loc):
-    """checks whether the player can be moved up"""
-    check_loc = body_loc[0]
-    if check_loc[0] == 0:
-        return False
-    return True
-
-def is_possible_down(leg_loc):
-    """checks whether the player can be moved to the down"""
-    check_loc = leg_loc[0]
-    if check_loc[0] == consts.BOARD_ROWS - 1:
-        return False
-    return True
+def feet_cells():
+    """רשימת (row, col) של 2 משבצות הרגליים (השורה התחתונה)."""
+    top, left = position
+    feet_top = top + consts.SOLDIER_BODY_ROWS
+    return [(feet_top + row, left + col)
+            for row in range(consts.SOLDIER_FEET_ROWS)
+            for col in range(consts.SOLDIER_COLS)]
 
 
-"""moves solider as requested"""
-def move_solider_right(body_loc,leg_loc):
-    """moves the player right in the matrix"""
-    for location in body_loc:
-        location[1] += 1
-    for location in leg_loc:
-        location[1] += 1
-
-def move_solider_left(body_loc,leg_loc):
-    """moves the player left in the matrix"""
-    for location in body_loc:
-        location[1] -= 1
-    for location in leg_loc:
-        location[1] -= 1
-
-def move_solider_up(body_loc,leg_loc):
-    """moves the player up in the matrix"""
-    for location in body_loc:
-        location[0] -= 1
-    for location in leg_loc:
-        location[0] -= 1
-
-def move_solider_down(body_loc,leg_loc):
-    """moves the player down in the matrix"""
-    for location in body_loc:
-        location[0] += 1
-    for location in leg_loc:
-        location[0] += 1
-
-def print_matrix(body_lst):
-    for row in body_lst:
-        for elem in row:
-            print(elem, end=" ")
-        print()
-
-body_loc = save_start_body_loc()
-leg_loc = save_start_leg_loc()
-update_solider_location(body_loc, leg_loc)
-
-print(is_win_reach_the_flag(body_loc))
-print(is_loss_reach_mine(leg_loc))
-print_matrix(game_field.matrix_field)
-print()
+def can_move(direction):
+    """האם תזוזה בכיוון הנתון תשאיר את כל החייל בתוך גבולות הלוח."""
+    delta_row, delta_col = DIRECTIONS[direction]
+    new_top = position[0] + delta_row
+    new_left = position[1] + delta_col
+    return (0 <= new_top
+            and new_top + consts.SOLDIER_ROWS <= consts.BOARD_ROWS
+            and 0 <= new_left
+            and new_left + consts.SOLDIER_COLS <= consts.BOARD_COLS)
 
 
-remove_solider_location(body_loc, leg_loc)
-while (is_possible_right(body_loc)):
-    remove_solider_location(body_loc, leg_loc)
-    move_solider_right(body_loc, leg_loc)
-    update_solider_location(body_loc, leg_loc)
+def move(direction):
+    """מזיז את החייל משבצת אחת בכיוון הנתון.
+    יש לוודא can_move(direction) לפני הקריאה."""
+    delta_row, delta_col = DIRECTIONS[direction]
+    position[0] += delta_row
+    position[1] += delta_col
 
 
-print_matrix(game_field.matrix_field)
+def pixel_top_left():
+    """מיקום הפינה השמאלית-עליונה של החייל בפיקסלים, עבור הציור."""
+    return (position[1] * consts.CELL_SIZE, position[0] * consts.CELL_SIZE)
+
+
+if __name__ == "__main__":
+    create()
+    print("position :", position)
+    print("body     :", body_cells())
+    print("feet     :", feet_cells())
+    for d in DIRECTIONS:
+        print(f"can_move({d:5}) = {can_move(d)}")

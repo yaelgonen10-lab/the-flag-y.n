@@ -1,91 +1,190 @@
-import pygame
-import sys
-import consts
 import random
+import pygame
+import consts
+import game_field
+import soldier
 
 
-FLOWER_SIZE = (55, 55)  # Size of flowers (instead of the grass)
-GREEN = (34, 139, 34)  # The color green
-NUM_FLOWERS = 20  # The required number of flowers
-MAX_ATTEMPTS = 100  # The number of times it will randomly select a location for the flowers
-BUFFER_PIXELS = 15  # To ensure the flowers don't overlap and remain truly separated, we will space them out by using pixels
-WHITE = (255, 255, 255)  # Font color of the text
-
-
-
-def init_game():
-    """Initializes the game ,creates the window, and loads the flower image"""
+def create_game_window():
     pygame.init()
-    screen = pygame.display.set_mode(
-            (consts.WINDOW_WIDTH, consts.WINDOW_HEIGHT))
-    pygame.display.set_caption("game")
 
-    original_image = pygame.image.load("flower.png").convert_alpha()
-    flower_image = pygame.transform.scale(original_image, FLOWER_SIZE)
+    width = consts.WINDOW_WIDTH
+    height = consts.WINDOW_HEIGHT
+    window_surface = pygame.display.set_mode((width, height))
 
-    return screen, flower_image
+    pygame.display.set_caption(consts.WINDOW_TITLE)
+
+    return window_surface
 
 
-def generate_flower_positions():
-    """Generates random locations for the flowers, ensuring no overlap between them"""
-    flower_rects = []
+def load_game_images():
+    images_dictionary = {}
+    soldier_raw = pygame.image.load(consts.SOLDIER_IMAGE).convert_alpha()
+    images_dictionary["soldier"] = pygame.transform.scale(soldier_raw,
+                                                          consts.SOLDIER_PIXEL_SIZE)
+
+    flag_raw = pygame.image.load(consts.FLAG_IMAGE).convert_alpha()
+    images_dictionary["flag"] = pygame.transform.scale(flag_raw,
+                                                       consts.FLAG_PIXEL_SIZE)
+
+    mine_raw = pygame.image.load(consts.MINE_IMAGE).convert_alpha()
+    images_dictionary["mine"] = pygame.transform.scale(mine_raw,
+                                                       consts.MINE_PIXEL_SIZE)
+
+    # טעינת תמונת השיח בגודלה המקורי
+    images_dictionary["bush"] = pygame.image.load(
+        consts.BUSH_IMAGE).convert_alpha()
+
+    return images_dictionary
+
+
+def generate_bushes_positions():
+    """
+    מגרילה מיקומים וגדלים עבור השיחים במשחק בצורה אקראית.
+    מוודאת שהשיחים לא עולים אחד על השני, ומחזירה רשימה של מלבנים (Rect) עבור המיקומים שלהם.
+    """
+    bushes_list = []
+    min_size = consts.BUSH_MIN_CELLS * consts.CELL_SIZE
+    max_size = consts.BUSH_MAX_CELLS * consts.CELL_SIZE
     attempts = 0
 
-    while len(flower_rects) < NUM_FLOWERS and attempts < MAX_ATTEMPTS:
+    while len(
+            bushes_list) < consts.BUSHES_COUNT and attempts < consts.BUSH_PLACE_ATTEMPTS:
         attempts += 1
-        x = random.randint(0, consts.WINDOW_WIDTH - FLOWER_SIZE[0])
-        y = random.randint(0, consts.WINDOW_HEIGHT - FLOWER_SIZE[1])
 
-        new_rect = pygame.Rect(x, y, FLOWER_SIZE[0], FLOWER_SIZE[1])
-        buffered_rect = new_rect.inflate(BUFFER_PIXELS, BUFFER_PIXELS)
+        # הגרלת גודל השיח ומיקומו על המסך
+        size = random.randint(min_size, max_size)
+        x = random.randint(0, consts.WINDOW_WIDTH - size)
+        y = random.randint(0, consts.WINDOW_HEIGHT - size)
 
-        overlap = False
-        for existing_rect in flower_rects:
-            if buffered_rect.colliderect(
-                    existing_rect.inflate(BUFFER_PIXELS, BUFFER_PIXELS)):
-                overlap = True
-                break
+        candidate_rect = pygame.Rect(x, y, size, size)
 
-        if not overlap:
-            flower_rects.append(new_rect)
+        # בדיקה האם השיח החדש מתנגש בשיח שכבר קיים ברשימה
+        has_collision = False
+        for existing_bush in bushes_list:
+            if candidate_rect.colliderect(existing_bush):
+                has_collision = True
 
-    return flower_rects
+        # אם אין התנגשות, נוסיף את השיח לרשימה
+        if not has_collision:
+            bushes_list.append(candidate_rect)
 
-
-def draw_start_message(screen):
-    """Draws the opening message in the top left corner of the screen."""
-    font = pygame.font.Font(None, 36)
-    text_surface = font.render(consts.START_MESSAGE, True, WHITE)
-
-    # שינוי המיקום לפינה השמאלית העליונה (עם מרווח קטן של 70 פיקסלים מהקצוות(ביחס לציר איקס))
-    text_rect = text_surface.get_rect(topleft=(70, 10))
-
-    screen.blit(text_surface, text_rect)
+    return bushes_list
 
 
-def run_game_loop(screen, flower_image, flower_rects):
-    """Manages the main game loop, updates events, and draws elements on the screen"""
-    running = True
-    while running:
-
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-
-        screen.fill(GREEN)
-
-        for rect in flower_rects:
-            screen.blit(flower_image, rect.topleft)
-
-        draw_start_message(screen)
-
-        pygame.display.flip()
+def draw_background_field(window_surface):
+    """
+    צובעת את כל רקע מסך המשחק בצבע השדה הסטנדרטי.
+    """
+    window_surface.fill(consts.FIELD_COLOR)
 
 
-screen, flower_image = init_game()
-flower_rects = generate_flower_positions()
-run_game_loop(screen, flower_image, flower_rects)
+def draw_all_bushes(window_surface, images_dictionary, bushes_list):
+    """
+    עוברת על רשימת המיקומים של השיחים, משנה את גודל תמונת השיח
+    בהתאם לגודל שהוגרל לו, ומציירת אותו על המסך.
+    """
+    for bush_rect in bushes_list:
+        bush_image = images_dictionary["bush"]
+        scaled_bush = pygame.transform.scale(bush_image, (bush_rect.width,
+                                                          bush_rect.height))
+        window_surface.blit(scaled_bush, bush_rect.topleft)
 
-pygame.quit()
-sys.exit()
 
+def draw_game_flag(window_surface, images_dictionary):
+    """
+    מחשבת את המיקום המדויק בפיקסלים של הדגל לפי המערך של שדה המשחק,
+    ומציירת את תמונת הדגל על המסך.
+    """
+    row, col = game_field.flag_top_left()
+    pixel_x = col * consts.CELL_SIZE
+    pixel_y = row * consts.CELL_SIZE
+
+    window_surface.blit(images_dictionary["flag"], (pixel_x, pixel_y))
+
+
+def draw_game_soldier(window_surface, images_dictionary):
+    """
+    מציירת את תמונת החייל במיקום הפיקסלים הנוכחי שלו בשדה.
+    """
+    soldier_position = soldier.pixel_top_left()
+    window_surface.blit(images_dictionary["soldier"], soldier_position)
+
+
+def draw_welcome_text(window_surface):
+    """
+    מייצרת ומציירת את הודעת הפתיחה וההסבר של המשחק שורה אחר שורה
+    בצד ימין של המסך, בהתאם לגופנים ולצבעים שהוגדרו.
+    """
+    font = pygame.font.SysFont(consts.FONT_NAME, consts.WELCOME_FONT_SIZE,
+                               bold=True)
+
+    # חישוב היכן להתחיל לצייר את הטקסט מימין לחייל
+    start_x = consts.SOLDIER_COLS * consts.CELL_SIZE + consts.CELL_SIZE
+    current_y = consts.CELL_SIZE // 2
+
+    # פירוק הודעת המולטי-ליין לשורות נפרדות וציורן
+    message_lines = consts.WELCOME_MESSAGE.split("\n")
+    for line in message_lines:
+        text_image = font.render(line, True, consts.WELCOME_TEXT_COLOR)
+        window_surface.blit(text_image, (start_x, current_y))
+        current_y += font.get_linesize()
+
+
+def draw_reveal_mode(window_surface, images_dictionary):
+    """
+    מציגה את מצב חשיפת המוקשים (כאשר השחקן מפסיד או לוחץ על מקש החשיפה):
+    צובעת את הרקע, מציירת רשת משבצות (גריד), מציגה את כל המוקשים בשדה,
+    ולבסוף מציירת את הדגל והחייל.
+    """
+    window_surface.fill(consts.REVEAL_BG_COLOR)
+
+    # ציור קווי הרשת האנכיים
+    for x in range(0, consts.WINDOW_WIDTH + 1, consts.CELL_SIZE):
+        pygame.draw.line(window_surface, consts.GRID_LINE_COLOR, (x, 0),
+                         (x, consts.WINDOW_HEIGHT))
+
+    # ציור קווי הרשת האופקיים
+    for y in range(0, consts.WINDOW_HEIGHT + 1, consts.CELL_SIZE):
+        pygame.draw.line(window_surface, consts.GRID_LINE_COLOR, (0, y),
+                         (consts.WINDOW_WIDTH, y))
+
+    # מעבר על רשימת המוקשים וציור של כל מוקש במשבצת שלו
+    for row, col in game_field.mines:
+        pixel_x = col * consts.CELL_SIZE
+        pixel_y = row * consts.CELL_SIZE
+        window_surface.blit(images_dictionary["mine"], (pixel_x, pixel_y))
+
+    # ציור הדגל והחייל מעל הרשת והמוקשים
+    draw_game_flag(window_surface, images_dictionary)
+    draw_game_soldier(window_surface, images_dictionary)
+
+
+def draw_popup_message(window_surface, text, color):
+    """
+    מציירת תיבת הודעה ריבועית במרכז המסך (למשל עבור הודעת ניצחון או הפסד)
+    ומציגה בתוכה את הטקסט המבוקש.
+    """
+    font = pygame.font.SysFont(consts.FONT_NAME, consts.MESSAGE_FONT_SIZE,
+                               bold=True)
+    text_image = font.render(text, True, color)
+
+    # מיקום הטקסט בדיוק במרכז החלון
+    center_x = consts.WINDOW_WIDTH // 2
+    center_y = consts.WINDOW_HEIGHT // 2
+    text_rect = text_image.get_rect(center=(center_x, center_y))
+
+    # יצירת תיבת רקע גדולה במעט מהטקסט וציורה
+    padding_x = consts.CELL_SIZE * 2
+    padding_y = consts.CELL_SIZE
+    box_rect = text_rect.inflate(padding_x, padding_y)
+
+    pygame.draw.rect(window_surface, consts.MESSAGE_BOX_COLOR, box_rect)
+    window_surface.blit(text_image, text_rect)
+
+
+def update_display():
+    """
+    מעדכנת את התצוגה על המסך ומציגה בפועל את כל מה שצויר מאז העדכון האחרון.
+    """
+    pygame.display.flip()

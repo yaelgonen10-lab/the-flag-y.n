@@ -1,81 +1,119 @@
-import consts
+"""
+game_field.py
+=============
+ניהול לוח המשחק ברמת הלוגיקה (שורות ועמודות, בלי פיקסלים).
+
+הלוח מיוצג ע"י מטריצה בגודל BOARD_ROWS x BOARD_COLS.
+כל תא הוא אחד מ: consts.EMPTY / consts.MINE / consts.FLAG.
+החייל *אינו* נשמר במטריצה - הוא מנוהל במודול soldier, וכך הציור
+והלוגיקה של החייל לא מתערבבים עם הלוח.
+"""
+
 import random
 
-matrix_field = []
+import consts
 
-#create field
-def create_matrix_field():
-    """creates a field of a specified size"""
-    for i in range(consts.BOARD_ROWS):
-        matrix_field.append(create_line())
+# המטריצה עצמה. נבנית מחדש בכל קריאה ל-build().
+matrix = []
 
-
-def create_line():
-    """creates a row in a field"""
-    line = []
-    for i in range(consts.BOARD_COLS):
-        line.append("0")
-    return line
+# רשימת הפינות השמאליות (row, col) של המוקשים, לשימוש הציור במצב החשיפה.
+mines = []
 
 
-#puts flag in mine ("f"...)
-def scatter_flag():
-    flag_row = consts.BOARD_ROWS - consts.FLAG_ROWS
-    flag_col = consts.BOARD_COLS - consts.FLAG_COLS
-    for i in range(consts.FLAG_ROWS):
-        for j in range(consts.FLAG_COLS):
-            matrix_field[flag_row + i][flag_col + j] = "f"
+def build():
+    """בונה לוח חדש: מטריצה ריקה, דגל בפינה הימנית-תחתונה, ומוקשים אקראיים."""
+    global matrix, mines
+    matrix = [[consts.EMPTY for _ in range(consts.BOARD_COLS)]
+              for _ in range(consts.BOARD_ROWS)]
+    mines = []
+    _place_flag()
+    _scatter_mines()
 
 
-#puts mine in field ("x", "X", "x")
-def random_loc_mine():
-    """finds a random location for a mine within the matrix range"""
-    loc_mine_row = random.randint(0, consts.BOARD_ROWS - 1)
-    loc_mine_col = random.randint(0, consts.BOARD_COLS - 1 - consts.MINE_COLS)
-    location = [loc_mine_row, loc_mine_col]
-    return location
+# ---------------------------------------------------------------------------
+# דגל
+# ---------------------------------------------------------------------------
+def flag_top_left():
+    """(row, col) של הפינה השמאלית-עליונה של הדגל.
+    מחושב מגודל הלוח פחות גודל הדגל - אין כאן מספר קבוע."""
+    return (consts.BOARD_ROWS - consts.FLAG_ROWS,
+            consts.BOARD_COLS - consts.FLAG_COLS)
 
-def is_possible_mine(location):
-    """checks whether the mine can be placed (makes sure there is space between the mines or flag place)"""
-    row = location[0]
-    col = location[1]
-    if col == 0:
-        pass
-    elif matrix_field[row][col - 1] == "x":
+
+def _place_flag():
+    """מסמן את משבצות הדגל במטריצה."""
+    top, left = flag_top_left()
+    for row in range(top, top + consts.FLAG_ROWS):
+        for col in range(left, left + consts.FLAG_COLS):
+            matrix[row][col] = consts.FLAG
+
+
+# ---------------------------------------------------------------------------
+# מוקשים
+# ---------------------------------------------------------------------------
+def _scatter_mines():
+    """מפזר MINES_COUNT מוקשים במיקומים אקראיים חוקיים."""
+    placed = 0
+    while placed < consts.MINES_COUNT:
+        row = random.randint(0, consts.BOARD_ROWS - consts.MINE_ROWS)
+        # שהמוקש בן שלוש המשבצות ייכנס בתוך הלוח
+        col = random.randint(0, consts.BOARD_COLS - consts.MINE_COLS)
+        if _can_place_mine(row, col):
+            _put_mine(row, col)
+            placed += 1
+
+
+def _can_place_mine(row, col):
+    """בודק שאפשר להניח מוקש שפינתו השמאלית ב-(row, col):
+    לא על הדגל, לא על פינת ההתחלה של החייל, ולא צמוד למוקש קיים."""
+    # לא לחפוף את ריבוע ההתחלה של החייל - אחרת הפסד כבר בפריים הראשון
+    if row < consts.SOLDIER_ROWS and col < consts.SOLDIER_COLS:
         return False
-    for i in range(consts.MINE_COLS + 1):
-            if matrix_field[row][col + i] in "xfsl":
-                return False
+
+    # לבדוק את טווח המוקש עצמו + רווח MINE_GAP מכל צד
+    left = max(0, col - consts.MINE_GAP)
+    right = min(consts.BOARD_COLS - 1, col + consts.MINE_COLS - 1 + consts.MINE_GAP)
+    for check_col in range(left, right + 1):
+        if matrix[row][check_col] != consts.EMPTY:
+            return False
     return True
 
-def scatter_mines():
-    """randomly places mines according to the set quantity."""
-    count = 0
-    while count < consts.MINES_COUNT:
-        location = random_loc_mine()
-        if is_possible_mine(location):
-            in_mine(location)
-            count += 1
 
-
-def in_mine(location):
-    """puts the mine in matrix_field"""
-    row = location[0]
-    col = location[1]
+def _put_mine(row, col):
+    """מסמן את שלוש משבצות המוקש ומוסיף אותו לרשימת המוקשים."""
     for i in range(consts.MINE_COLS):
-        matrix_field[row][col + i] = "x"
+        matrix[row][col + i] = consts.MINE
+    mines.append((row, col))
 
 
+# ---------------------------------------------------------------------------
+# בדיקות התנגשות - מקבלות רשימת משבצות ומחזירות תשובה בוליאנית
+# ---------------------------------------------------------------------------
+def any_cell_has(cells, marker):
+    """האם לפחות אחת מהמשבצות ברשימה מסומנת ב-marker הנתון."""
+    return any(matrix[row][col] == marker for row, col in cells)
 
 
+def touches_flag(cells):
+    """האם אחת מהמשבצות נוגעת בדגל (משמש לבדיקת ניצחון מול גוף החייל)."""
+    return any_cell_has(cells, consts.FLAG)
+
+
+def touches_mine(cells):
+    """האם אחת מהמשבצות נוגעת במוקש (משמש לבדיקת הפסד מול רגלי החייל)."""
+    return any_cell_has(cells, consts.MINE)
+
+
+# ---------------------------------------------------------------------------
+# עזר לבדיקות ידניות: הרצת הקובץ עצמו מדפיסה את הלוח
+# ---------------------------------------------------------------------------
 def print_matrix():
-    for row in matrix_field:
-        for elem in row:
-            print(elem, end=" ")
-        print()
+    symbols = {consts.EMPTY: ".", consts.MINE: "x", consts.FLAG: "f"}
+    for row in matrix:
+        print(" ".join(symbols[cell] for cell in row))
 
-create_matrix_field()
-scatter_mines()
-scatter_flag()
-# print_matrix()
 
+if __name__ == "__main__":
+    build()
+    print_matrix()
+    print("mines:", mines)
