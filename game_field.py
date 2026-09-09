@@ -49,13 +49,16 @@ def is_possible_mine(location):
     return True
 
 def scatter_mines():
-    """randomly places mines according to the set quantity."""
+    """randomly places mines according to the set quantity. and saves location for draw on screen"""
+    loc_mines = []
     count = 0
     while count < consts.MINES_COUNT:
         location = random_loc_mine()
         if is_possible_mine(location):
             in_mine(location)
+            loc_mines.append(location)
             count += 1
+    return loc_mines
 
 
 def in_mine(location):
